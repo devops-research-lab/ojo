@@ -35,6 +35,10 @@ func (k *Keeper) PruneElysPrices(ctx sdk.Context, asset string) {
 	allAssetPrice := k.GetAllAssetPrices(ctx, asset)
 	total := len(allAssetPrice)
 
+	if total <= 1 {
+		return // nothing to prune
+	}
+
 	sort.Slice(allAssetPrice, func(i, j int) bool {
 		return allAssetPrice[i].Timestamp < allAssetPrice[j].Timestamp
 	})

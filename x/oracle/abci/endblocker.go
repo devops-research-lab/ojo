@@ -43,6 +43,15 @@ func EndBlocker(ctx context.Context, k keeper.Keeper) error {
 	}
 
 	if k.IsPeriodLastBlock(sdkCtx, params.VotePeriod) {
+		usdcDenom := "uusdc"
+		assetInfos := k.GetAllAssetInfo(sdkCtx)
+		for _, assetInfo := range assetInfos {
+			if assetInfo.Display == "USDC" {
+				usdcDenom = assetInfo.Denom
+			}
+			k.PruneElysPrices(sdkCtx, assetInfo.Display)
+		}
+
 		if k.PriceFeeder.Oracle != nil && k.PriceFeeder.AppConfig.Enable {
 			// Update price feeder oracle with latest params.
 			k.PriceFeeder.Oracle.ParamCache.UpdateParamCache(sdkCtx.BlockHeight(), k.GetParams(sdkCtx), nil)
@@ -57,15 +66,6 @@ func EndBlocker(ctx context.Context, k keeper.Keeper) error {
 			accountedPoolsMap := make(map[uint64]types.AccountedPool)
 			for _, accountedPool := range accountedPools {
 				accountedPoolsMap[accountedPool.PoolId] = accountedPool
-			}
-
-			usdcDenom := "uusdc"
-			assetInfos := k.GetAllAssetInfo(sdkCtx)
-			for _, assetInfo := range assetInfos {
-				if assetInfo.Display == "USDC" {
-					usdcDenom = assetInfo.Denom
-				}
-				k.PruneElysPrices(sdkCtx, assetInfo.Display)
 			}
 
 			k.PriceFeeder.Oracle.AmmPools = ammPoolsMap
@@ -90,8 +90,6 @@ func EndBlocker(ctx context.Context, k keeper.Keeper) error {
 			return err
 		}
 	}
-
-	k.PruneAllPrices(sdkCtx)
 
 	return nil
 }
@@ -165,17 +163,6 @@ func CalcPrices(ctx sdk.Context, params types.Params, k keeper.Keeper) error {
 			BlockHeight: util.SafeInt64ToUint64(ctx.BlockHeight()),
 		}
 		k.SetPrice(ctx, elysPrice)
-
-		if k.IsPeriodLastBlock(ctx, params.HistoricStampPeriod) {
-			k.AddHistoricPrice(ctx, ballotDenom.Denom, exchangeRate)
-		}
-
-		// Calculate and stamp median/median deviation if median stamp period has passed
-		if k.IsPeriodLastBlock(ctx, params.MedianStampPeriod) {
-			if err = k.CalcAndSetHistoricMedian(ctx, ballotDenom.Denom); err != nil {
-				return err
-			}
-		}
 	}
 
 	// Clear the ballot

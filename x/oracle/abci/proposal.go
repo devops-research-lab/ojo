@@ -159,7 +159,7 @@ func (h *ProposalHandler) ProcessProposalHandler() sdk.ProcessProposalHandler {
 					return &cometabci.ResponseProcessProposal{Status: cometabci.ResponseProcessProposal_ACCEPT}, nil
 				}
 			}
-			
+
 			if len(req.Txs) < 1 {
 				h.logger.Error("got process proposal request with no commit info")
 				return &cometabci.ResponseProcessProposal{Status: cometabci.ResponseProcessProposal_REJECT},
@@ -235,18 +235,18 @@ func (h *ProposalHandler) generateExchangeRateVotes(
 ) (votes []oracletypes.AggregateExchangeRateVote, err error) {
 	emptyExtensionCount := 0
 	totalExtensions := 0
-	
+
 	for _, vote := range ci.Votes {
 		if vote.BlockIdFlag != cmtproto.BlockIDFlagCommit {
 			continue
 		}
-		
+
 		totalExtensions++
 
 		// Track empty vote extensions
 		if len(vote.VoteExtension) == 0 {
 			emptyExtensionCount++
-			
+
 			var valConsAddr sdk.ConsAddress
 			if err := valConsAddr.Unmarshal(vote.Validator.Address); err == nil {
 				h.logger.Debug(
