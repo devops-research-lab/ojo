@@ -1,126 +1,93 @@
 name: Simulations
 on:
-  pull_request:
-  push:
-    branches:
-      - main
-      - release/**
-
+  push: null
 concurrency:
   group: ci-${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
-
 jobs:
-  install-dependencies:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/setup-go@v5
-        with:
-          go-go-version: '1.23'
-
-      - name: Install runsim
-        run: export GO111MODULE="on" && go install github.com/cosmos/tools/cmd/runsim@v1.0.0
-      - uses: actions/cache@v4
-        with:
-          path: ~/go/bin
-          key: ${{ runner.os }}-go-runsim-binary
-
   test-app-non-determinism:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: technote-space/get-diff-action@v6.1.2
-        with:
-          PATTERNS: |
-            **/**.go
-            go.mod
-            go.sum
-      - uses: actions/setup-go@v5
-        if: env.GIT_DIFF
-        with:
-          go-go-version: '1.23'
-          cache: true
-      - name: Test application non-determinism
-        if: env.GIT_DIFF
-        run: |
-          make test-app-non-determinism
+    - uses: actions/checkout@v4
+    - uses: technote-space/get-diff-action@v6.1.2
+      with:
+        PATTERNS: '**/**.go
 
-  test-app-import-export:
-    runs-on: ubuntu-latest
-    needs: install-dependencies
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-      - uses: technote-space/get-diff-action@v6.1.2
-        with:
-          PATTERNS: |
-            **/**.go
-            go.mod
-            go.sum
-      - uses: actions/setup-go@v5
-        if: env.GIT_DIFF
-        with:
-          go-go-version: '1.23'
-          cache: true
-      - uses: actions/cache@v4
-        if: env.GIT_DIFF
-        with:
-          path: ~/go/bin
-          key: ${{ runner.os }}-go-runsim-binary
-      - name: test-app-import-export
-        if: env.GIT_DIFF
-        run: |
-          make test-app-import-export
+          go.mod
 
-  test-app-after-import:
-    runs-on: ubuntu-latest
-    needs: install-dependencies
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-      - uses: technote-space/get-diff-action@v6.1.2
-        with:
-          PATTERNS: |
-            **/**.go
-            go.mod
-            go.sum
-      - uses: actions/setup-go@v5
-        if: env.GIT_DIFF
-        with:
-          go-go-version: '1.23'
-          cache: true
-      - uses: actions/cache@v4
-        if: env.GIT_DIFF
-        with:
-          path: ~/go/bin
-          key: ${{ runner.os }}-go-runsim-binary
-      - name: test-app-after-import
-        if: env.GIT_DIFF
-        run: |
-          make test-app-after-import
+          go.sum
 
-  test-app-multi-seed-short:
+          '
+    - uses: actions/setup-go@v5
+      if: env.GIT_DIFF
+      with:
+        go-go-version: '1.23'
+        cache: true
+    - name: Test application non-determinism
+      if: env.GIT_DIFF
+      run: 'make test-app-non-determinism
+
+        '
+  install-dependencies:
     runs-on: ubuntu-latest
-    needs: install-dependencies
     steps:
-      - uses: actions/checkout@v4
-      - uses: technote-space/get-diff-action@v6.1.2
-        with:
-          PATTERNS: |
-            **/**.go
-            go.mod
-            go.sum
-      - uses: actions/setup-go@v5
-        if: env.GIT_DIFF
-        with:
-          go-go-version: '1.23'
-          cache: true
-      - uses: actions/cache@v4
-        if: env.GIT_DIFF
-        with:
-          path: ~/go/bin
-          key: ${{ runner.os }}-go-runsim-binary
-      - name: test-app-multi-seed-short
-        if: env.GIT_DIFF
-        run: |
-          make test-app-multi-seed-short
+    - uses: actions/setup-go@v5
+      with:
+        go-go-version: '1.23'
+    - name: Install runsim
+      run: export GO111MODULE="on" && go install github.com/cosmos/tools/cmd/runsim@v1.0.0
+    - uses: actions/cache@v4
+      with:
+        path: ~/go/bin
+        key: ${{ runner.os }}-go-runsim-binary
+      id: _bre_install_dependencies
+    - uses: actions/checkout@v4
+    - uses: technote-space/get-diff-action@v6.1.2
+      with:
+        PATTERNS: '**/**.go
+
+          go.mod
+
+          go.sum
+
+          '
+    - uses: actions/setup-go@v5
+      if: env.GIT_DIFF
+      with:
+        go-go-version: '1.23'
+        cache: true
+    - name: test-app-import-export
+      if: env.GIT_DIFF
+      run: 'make test-app-import-export
+
+        '
+    - uses: technote-space/get-diff-action@v6.1.2
+      with:
+        PATTERNS: '**/**.go
+
+          go.mod
+
+          go.sum
+
+          '
+      if: '!cancelled() && steps._bre_install_dependencies.conclusion == ''success'''
+    - name: test-app-after-import
+      if: (!cancelled() && steps._bre_install_dependencies.conclusion == 'success') && (env.GIT_DIFF)
+      run: 'make test-app-after-import
+
+        '
+    - uses: technote-space/get-diff-action@v6.1.2
+      with:
+        PATTERNS: '**/**.go
+
+          go.mod
+
+          go.sum
+
+          '
+      if: '!cancelled() && steps._bre_install_dependencies.conclusion == ''success'''
+    - name: test-app-multi-seed-short
+      if: (!cancelled() && steps._bre_install_dependencies.conclusion == 'success') && (env.GIT_DIFF)
+      run: 'make test-app-multi-seed-short
+
+        '
